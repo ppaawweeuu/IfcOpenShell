@@ -27,10 +27,8 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
-import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
 class Operator:
@@ -142,6 +140,8 @@ class EditPset(bpy.types.Operator, Operator):
             )
         else:
             for key, value in properties.items():
+                if value is None:
+                    continue
                 if isinstance(value, float):
                     properties[key] = round(value, 4)
                 elif not isinstance(value, int):
@@ -212,55 +212,6 @@ class AddQto(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
         )
-
-
-class CalculateQuantity(bpy.types.Operator):
-    bl_idname = "bim.calculate_quantity"
-    bl_label = "Calculate Quantity"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculates the quantity with a defined formula for this exact entity and quantity"
-    prop: bpy.props.StringProperty()
-
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        prop = obj.PsetProperties.properties.get(self.prop)
-        quantity = self.calculate_quantity(obj, context)
-
-        if quantity is None:
-            self.report({"ERROR"}, "Could not calculate quantity")
-            return {"CANCELLED"}
-
-        prop.metadata.float_value = quantity
-        return {"FINISHED"}
-
-    def calculate_quantity(self, obj, context):
-        quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
-        if quantity is None:
-            return
-        return round(quantity, 3)
-
-
-class GuessQuantity(bpy.types.Operator):
-    bl_idname = "bim.guess_quantity"
-    bl_label = "Guess Quantity"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Calculate the quantity by guessing the formula from the quantity name. "
-        "Less reliable than Calculate Quantity"
-    )
-    prop: bpy.props.StringProperty()
-
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        prop = obj.PsetProperties.properties.get(self.prop)
-        prop.metadata.float_value = self.guess_quantity(obj, context)
-        return {"FINISHED"}
-
-    def guess_quantity(self, obj, context):
-        quantity = self.qto_calculator.guess_quantity(self.prop, [p.name for p in obj.PsetProperties.properties], obj)
-        return round(quantity, 3) if quantity is not None else None
 
 
 class CopyPropertyToSelection(bpy.types.Operator, Operator):

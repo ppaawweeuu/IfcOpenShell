@@ -86,7 +86,6 @@ def copy_to_container(ifc, collector, spatial, obj=None, containers=None):
     element = ifc.get_entity(obj)
     if not element:
         return
-    collector.sync(obj)
     from_container = spatial.get_container(element)
     if from_container:
         matrix = spatial.get_relative_object_matrix(obj, ifc.get_object(from_container))
@@ -120,28 +119,28 @@ def select_product(spatial, product):
     spatial.select_products([product])
 
 
-def load_container_manager(spatial):
-    spatial.load_container_manager()
+def import_spatial_decomposition(spatial):
+    spatial.import_spatial_decomposition()
 
 
 def edit_container_attributes(spatial, entity=None):
     spatial.edit_container_attributes(entity)
-    spatial.load_container_manager()
+    spatial.import_spatial_decomposition()
 
 
 def contract_container(spatial, container=None):
     spatial.contract_container(container)
-    spatial.load_container_manager()
+    spatial.import_spatial_decomposition()
 
 
 def expand_container(spatial, container=None):
     spatial.expand_container(container)
-    spatial.load_container_manager()
+    spatial.import_spatial_decomposition()
 
 
 def delete_container(ifc, spatial, geometry, container=None):
     geometry.delete_ifc_object(ifc.get_object(container))
-    spatial.load_container_manager()
+    spatial.import_spatial_decomposition()
 
 
 def select_decomposed_elements(spatial):
@@ -238,3 +237,7 @@ def toggle_hide_spaces(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_hide_spaces(spaces)
+
+
+def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance):
+    spatial.set_default_container(container)

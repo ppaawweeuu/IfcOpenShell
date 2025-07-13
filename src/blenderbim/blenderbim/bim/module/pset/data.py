@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim.schema
 
@@ -297,7 +298,6 @@ class WorkSchedulePsetsData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.WorkSchedulePsetProperties
         ifc_definition_id = bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True

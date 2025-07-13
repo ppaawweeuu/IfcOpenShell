@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
+import blenderbim.core.geometry
 import blenderbim.core.geometry as core
 import blenderbim.core.aggregate
 import blenderbim.core.style
@@ -39,6 +40,7 @@ from mathutils import Vector, Matrix
 from time import time
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from typing import Any
 
 
 class Operator:
@@ -372,14 +374,12 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
-            coordinate_offset = Vector(
-                (
-                    float(gprop.blender_eastings),
-                    float(gprop.blender_northings),
-                    float(gprop.blender_orthogonal_height),
-                )
-            )
+        if (
+            gprop.has_blender_offset
+            and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
+            and obj.BIMObjectProperties.cartesian_point_offset
+        ):
+            coordinate_offset = Vector(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(",")))
 
         representation_data = {
             "context": context_of_items,
@@ -713,6 +713,10 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             else:
                 bpy.data.objects.remove(obj)
         for collection in collections_to_delete:
+            # Removing an aggregate object would also remove it's collection
+            # making the collection data-block invalid.
+            if not tool.Blender.is_valid_data_block(collection):
+                continue
             bpy.data.collections.remove(collection)
         if self.is_batch:
             old_file = tool.Ifc.get()
@@ -724,7 +728,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             IfcStore.add_transaction_operation(self)
         return {"FINISHED"}
 
-    def get_collection_objects_and_children(self, collection):
+    def get_collection_objects_and_children(self, collection: bpy.types.Collection) -> dict[str, Any]:
         objects = set()
         children = set()
         queue = [collection]
@@ -942,7 +946,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
                 pset = tool.Ifc.get().by_id(pset["id"])
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0],pset=pset)
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0], pset=pset)
 
             if new[0].is_a("IfcElementAssembly"):
                 linked_aggregate_group = [
@@ -1170,7 +1174,10 @@ class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
-        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=True)
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(
+            self, context, location_from_3d_cursor=True
+        )
+
 
 class RefreshLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.refresh_linked_aggregate"
@@ -1683,20 +1690,11 @@ class OverrideModeSetObject(bpy.types.Operator):
             apply_openings=True,
         )
 
-    def draw(self, context):
-        if self.is_valid:
-            row = self.layout.row()
-            row.prop(self, "should_save")
-        else:
-            row = self.layout.row()
-            row.label(text="No Geometry Found: Object will revert to previous state.")
-
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
         self.is_valid = True
-        self.should_save = True
 
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
 
@@ -1758,8 +1756,6 @@ class OverrideModeSetObject(bpy.types.Operator):
                 else:
                     tool.Ifc.finish_edit(obj)
 
-        if self.edited_objs:
-            return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
 
 

@@ -23,7 +23,6 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.schema
 from typing import Union
-from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Pset(blenderbim.core.tool.Pset):
@@ -177,7 +176,6 @@ class Pset(blenderbim.core.tool.Pset):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-        metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
 
         special_type = ""

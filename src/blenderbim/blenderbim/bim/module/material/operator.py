@@ -562,6 +562,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         blenderbim.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
@@ -577,6 +578,7 @@ class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         return {"FINISHED"}
 
@@ -594,6 +596,7 @@ class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
         attributes = blenderbim.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
 
@@ -700,13 +703,28 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.expand_material_category"
     bl_label = "Expand Material Category"
+    bl_description = "SHIFT+CLICK to expand all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Expanding all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.expand_all or c.name == self.category)
+        ]:
             category.is_expanded = True
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
@@ -714,13 +732,28 @@ class ExpandMaterialCategory(bpy.types.Operator):
 class ContractMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.contract_material_category"
     bl_label = "Contract Material Category"
+    bl_description = "SHIFT+CLICK to contract all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Contracting all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.contract_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.contract_all or c.name == self.category)
+        ]:
             category.is_expanded = False
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 

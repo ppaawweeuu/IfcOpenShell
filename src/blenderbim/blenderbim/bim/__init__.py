@@ -142,6 +142,7 @@ classes = [
     ui.BIM_PT_tabs,
     # Project overview
     ui.BIM_PT_tab_project_info,
+    ui.BIM_PT_tab_spatial_decomposition,
     ui.BIM_PT_tab_project_setup,
     ui.BIM_PT_tab_geometry,
     ui.BIM_PT_tab_stakeholders,
@@ -170,6 +171,7 @@ classes = [
     ui.BIM_PT_tab_structural,
     # Construction scheduling
     ui.BIM_PT_tab_status,
+    ui.BIM_PT_tab_qto,
     ui.BIM_PT_tab_resources,
     ui.BIM_PT_tab_cost,
     ui.BIM_PT_tab_sequence,

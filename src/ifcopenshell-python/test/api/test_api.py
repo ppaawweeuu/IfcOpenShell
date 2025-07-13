@@ -28,7 +28,7 @@ from typing import Union
 
 def deprecation_check(test):
     def new_test(self):
-        assert datetime.now().date() < datetime(2024, 6, 1).date(), "API arguments are completely deprecated"
+        assert datetime.now().date() < datetime(2024, 8, 1).date(), "API arguments are completely deprecated"
         test(self)
 
     return new_test
@@ -284,7 +284,7 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         assert rel.is_a("IfcRelReferencedInSpatialStructure")
 
     @deprecation_check
-    def test_removing_a_container(self):
+    def test_removing_a_structure(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run(

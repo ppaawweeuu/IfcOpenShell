@@ -22,7 +22,6 @@ import json
 import time
 import calendar
 import isodate
-import pystache
 import blenderbim.core.sequence as core
 import blenderbim.tool as tool
 import blenderbim.bim.module.sequence.helper as helper
@@ -1409,9 +1408,13 @@ class LoadProductTasks(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        core.load_product_related_tasks(
+        result = core.load_product_related_tasks(
             tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
         )
+        if isinstance(result, str):
+            self.report({"INFO"}, result)
+        else:
+            self.report({"INFO"}, f"{len(result)} product tasks loaded.")
         return {"FINISHED"}
 
 

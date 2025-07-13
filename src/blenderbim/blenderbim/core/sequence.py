@@ -533,20 +533,6 @@ def go_to_task(sequence: tool.Sequence, task: ifcopenshell.entity_instance) -> U
         return "Work schedule is not active"
 
 
-def highlight_product_related_task(sequence: tool.Sequence, spatial: tool.Spatial, product_type=None) -> None:
-    products = spatial.get_selected_products()
-    if products:
-        if product_type == "Output":
-            tasks = sequence.find_related_output_tasks(products[0])
-        elif product_type == "Input":
-            tasks = sequence.find_related_input_tasks(products[0])
-        for task in tasks:
-            work_schedule = sequence.get_work_schedule(task)
-            is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
-            if is_work_schedule_active:
-                sequence.go_to_task(task)
-
-
 def guess_date_range(sequence: tool.Sequence, work_schedule: ifcopenshell.entity_instance) -> None:
     start, finish = sequence.guess_date_range(work_schedule)
     sequence.update_visualisation_date(start, finish)
@@ -593,17 +579,20 @@ def generate_gantt_chart(sequence: tool.Sequence, work_schedule: ifcopenshell.en
     sequence.generate_gantt_browser_chart(json, work_schedule)
 
 
-def load_product_related_tasks(sequence: tool.Sequence, product: ifcopenshell.entity_instance) -> Union[None, str]:
+def load_product_related_tasks(
+    sequence: tool.Sequence, product: ifcopenshell.entity_instance
+) -> Union[list[ifcopenshell.entity_instance], str]:
     filter_by_schedule = sequence.is_filter_by_active_schedule()
     if filter_by_schedule:
         work_schedule = sequence.get_active_work_schedule()
         if work_schedule:
             task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
         else:
-            return "No active work schedule"
+            return "No active work schedule."
     else:
         task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
     sequence.load_product_related_tasks(task_inputs, task_ouputs)
+    return task_inputs + task_ouputs
 
 
 def reorder_task_nesting(

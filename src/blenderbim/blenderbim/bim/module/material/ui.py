@@ -110,7 +110,7 @@ class BIM_PT_materials(Panel):
         elif self.props.editing_material_type == "STYLE":
             row = self.layout.row(align=True)
             row.prop(self.props, "contexts", text="")
-            row.prop(self.props, "styles", text="")
+            prop_with_search(row, self.props, "styles", text="")
             row = self.layout.row(align=True)
             row.operator("bim.edit_material_style", text="Assign Style", icon="CHECKMARK")
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")
@@ -228,7 +228,7 @@ class BIM_PT_object_material(Panel):
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
-            if len(self.props.material_set_item_profile_attributes):
+            if len(self.props.material_set_item_profile_attributes) and self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_profile_ui(set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(set_item)
@@ -343,7 +343,7 @@ class BIM_UL_materials(UIList):
                     row.operator(
                         "bim.expand_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                     ).category = item.name
-                row.label(text=item.name or "Uncategorised")
+                row.label(text=item.name)
             else:
                 row.label(text="", icon="BLANK1")
                 row.label(text=item.name, icon="MATERIAL")

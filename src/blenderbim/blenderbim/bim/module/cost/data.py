@@ -198,9 +198,15 @@ class CostSchedulesData:
         #             data["DerivedUnitSymbol"] = "?"
         #         print("Total Cost", data["DerivedTotalCostQuantity"], cost_item.Name)
 
+    # TODO: dead code?
     @classmethod
-    def _get_object_quantities(cls, cost_item, element):
+    def _get_object_quantities(
+        cls, cost_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ) -> list[int]:
         if not element.is_a("IfcObject"):
+            return []
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
             return []
         results = []
         for relationship in element.IsDefinedBy:
@@ -210,7 +216,7 @@ class CostSchedulesData:
             if not qto.is_a("IfcElementQuantity"):
                 continue
             for prop in qto.Quantities:
-                if prop in cost_item.CostQuantities or []:
+                if prop in cost_quantities:
                     results.append(prop.id())
         return results
 

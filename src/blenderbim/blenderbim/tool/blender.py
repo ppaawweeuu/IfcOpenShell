@@ -21,6 +21,7 @@ import bmesh
 import json
 import ifcopenshell.api
 import ifcopenshell.util.element
+import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim
 import addon_utils
@@ -49,22 +50,30 @@ class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
+
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
+
+        
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
+
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
-                if a.type == "VIEW_3D":
-                    override = bpy.context.copy()
-                    override["area"] = a
-                    bpy.ops.view3d.localview(override)
-            bpy.context.scene.camera = obj
-            bpy.ops.view3d.localview(override)
+                if a.type == 'VIEW_3D':
+                    override = {'area': a, 'region': a.regions[-1], 'space': a.spaces[0], 'scene': bpy.context.scene}
+                    with bpy.context.temp_override(**override):
+                        bpy.ops.view3d.localview()
+                    bpy.context.scene.camera = obj
+
         else:
             bpy.context.scene.camera = obj
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+
+
+
 
     @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> Any:
@@ -187,6 +196,21 @@ class Blender(blenderbim.core.tool.Blender):
                 return tool.Ifc.get_entity(obj).is_a(ifc_class)
             return False
         return False
+
+    @classmethod
+    def is_valid_data_block(cls, data_block: bpy.types.ID) -> bool:
+        """Check if Blender data-block is still valid.
+
+        If Blender data-block (e.g. an Object) is removed then it's
+        python object gets invalidated and accessing any of it's attributes
+        leads to ReferenceError: StructRNA of type Object has been removed.
+        This method helps avoiding try / except ReferenceError constructions.
+        """
+        try:
+            data_block.bl_rna
+            return True
+        except ReferenceError:
+            return False
 
     @classmethod
     def show_info_message(cls, text: str, message_type: Literal["INFO", "ERROR"] = "INFO") -> None:
@@ -451,6 +475,13 @@ class Blender(blenderbim.core.tool.Blender):
             obj.select_set(False)
         context.view_layer.objects.active = active_object
         active_object.select_set(True)
+        
+    @classmethod
+    def select_object(cls, obj: bpy.types.Object):
+        try:
+            obj.select_set(True)
+        except RuntimeError:  # Trying to select a hidden object throws an error
+            pass
 
     @classmethod
     def set_objects_selection(

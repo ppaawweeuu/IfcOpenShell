@@ -637,16 +637,9 @@ class Pset:
 @interface
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
-    def set_qto_result(cls, result): pass
-    def get_applicable_quantity_names(cls, qto_name): pass
-    def get_applicable_base_quantity_name(cls, product): pass
-    def get_rounded_value(cls, new_quantity): pass
-    def get_calculated_object_quantities(cls, calculator, baste_qto, object): pass
-    def add_object_base_qto(cls, object): pass
-    def add_product_base_qto(cls, product): pass
-    def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
-    def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
     def get_related_cost_item_quantities(cls, product): pass
+    def get_rounded_value(cls, new_quantity): pass
+    def set_qto_result(cls, result): pass
 
 
 @interface
@@ -696,12 +689,15 @@ class Root:
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
     def get_decomposition_relationships(cls, objs): pass
+    def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
+    def is_containable(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
+    def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
@@ -714,7 +710,7 @@ class Selector:
 
 @interface
 class Search:
-    def from_selector_query(cls, query): pass
+    pass
 
 @interface
 class Sequence:
@@ -838,7 +834,7 @@ class Spatial:
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
-    def create_new_storey_li(cls, element, level_index): pass
+    def import_spatial_element(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
@@ -855,13 +851,15 @@ class Spatial:
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
-    def load_container_manager(cls): pass
+    def import_spatial_decomposition(cls): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
+    def set_default_container(cls, container): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
     def is_bounding_class(cls, visible_element): pass

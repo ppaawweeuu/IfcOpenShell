@@ -194,19 +194,17 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     layout_svg_command: StringProperty(name="Layout SVG Command", description='E.g. [["firefox", "path"]]')
     pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
-    openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
-    should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
-    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
+    should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
+    activate_workspace: BoolProperty(name="Activate BIM Workspace on Startup", default=True)
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
-    should_play_chaching_sound: BoolProperty(
-        name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
-    )
-    lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
-    spatial_elements_unselectable: BoolProperty(name="Should Make Spatial Elements Unselectable By Default", default=True)
+    should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
+    lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
+    spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -277,11 +275,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "spreadsheet_command")
         row = layout.row()
-        row.prop(self, "openlca_port")
-        row = layout.row()
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_setup_workspace")
+        row = layout.row()
+        row.prop(self, "activate_workspace")
         row = layout.row()
         row.prop(self, "should_setup_toolbar")
         row = layout.row()
@@ -343,6 +341,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "shadingstyle_default")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "drawing_font")
+        row.prop(context.scene.DocProperties, "magic_font_scale")
 
 
 # Scene panel groups
@@ -363,6 +362,7 @@ class BIM_PT_tabs(Panel):
                 aprops = context.screen.BIMTabProperties
 
             row = self.layout.row()
+            row.alignment = "CENTER"
             row.operator(
                 "bim.set_tab",
                 text="",
@@ -378,11 +378,11 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
             self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
             self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-            self.draw_tab_entry(row, "BLENDER", "BLENDER", True, aprops.tab == "BLENDER")
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
             # Yes, that's right.
             row = self.layout.row()
+            row.alignment = "CENTER"
             row.scale_y = 0.2
             for tab in [
                 "PROJECT",
@@ -394,7 +394,6 @@ class BIM_PT_tabs(Panel):
                 "SCHEDULING",
                 "FM",
                 "QUALITY",
-                "BLENDER",
                 "SWITCH",
             ]:
                 if aprops.tab == tab:
@@ -407,7 +406,7 @@ class BIM_PT_tabs(Panel):
 
             if blenderbim.last_error:
                 box = self.layout.box()
-                box.alert=True
+                box.alert = True
                 row = box.row(align=True)
                 row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
@@ -437,6 +436,20 @@ class BIM_PT_tab_project_info(Panel):
     @classmethod
     def poll(cls, context):
         return tool.Blender.is_tab(context, "PROJECT")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_spatial_decomposition(Panel):
+    bl_label = "Spatial Decomposition"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -490,7 +503,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED","HEADER_LAYOUT_EXPAND"}
+    bl_options = {"DEFAULT_CLOSED", "HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
@@ -503,8 +516,9 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         # Draws help button on the right
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.operator("bim.open_uri", text="", icon="HELP").uri = \
+        row.operator("bim.open_uri", text="", icon="HELP").uri = (
             "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
+        )
 
 
 class BIM_PT_tab_geometry(Panel):
@@ -523,6 +537,20 @@ class BIM_PT_tab_geometry(Panel):
 
 class BIM_PT_tab_status(Panel):
     bl_label = "Status"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_qto(Panel):
+    bl_label = "Quantity Take-off"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

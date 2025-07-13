@@ -103,8 +103,6 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
         op.obj_type = obj_type
     elif not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        if "Qto" in pset["Name"] and "Base" in pset["Name"]:
-            op = row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT", text="")
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
@@ -160,25 +158,6 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
-    if prop.metadata.has_calculator:
-        op = row.operator("bim.calculate_quantity", icon="MOD_EDGESPLIT", text="")
-        op.prop = prop.name
-    # Old "guess quantity" feature to be removed once new calculator is comprehensive
-    if (
-        "length" in prop.name.lower()
-        or "width" in prop.name.lower()
-        or "height" in prop.name.lower()
-        or "depth" in prop.name.lower()
-        or "perimeter" in prop.name.lower()
-    ):
-        op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
-        op.prop = prop.name
-    elif "area" in prop.name.lower():
-        op = row.operator("bim.guess_quantity", icon="MESH_CIRCLE", text="")
-        op.prop = prop.name
-    elif "volume" in prop.name.lower():
-        op = row.operator("bim.guess_quantity", icon="SPHERE", text="")
-        op.prop = prop.name
 
 
 class BIM_PT_object_psets(Panel):
